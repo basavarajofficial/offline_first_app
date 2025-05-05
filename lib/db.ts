@@ -4,16 +4,19 @@ import { createRxDatabase, addRxPlugin, RxDatabase, RxDocument, RxCollection } f
 import { getRxStorageDexie } from "rxdb/plugins/storage-dexie"
 import { RxDBLeaderElectionPlugin } from "rxdb/plugins/leader-election"
 import { RxDBQueryBuilderPlugin } from "rxdb/plugins/query-builder"
+import { RxDBUpdatePlugin } from "rxdb/plugins/update"
 // import { RxDBReplicationCouchDBPlugin } from 'rxdb/plugins/replication-couchdb'
 import { v4 as uuidv4 } from "uuid"
 import { BehaviorSubject, debounce, debounceTime } from "rxjs"
 import { syncCollectionFromFirestore, syncCollectionToFirestore } from "./syncFirestore"
 import { deleteDoc, deleteField, doc, updateDoc } from "firebase/firestore"
 import { toast } from "sonner"
+import { Article } from "./artcileType"
 
 // Add required plugins
 // addRxPlugin(RxDBReplicationCouchDBPlugin)
 // addRxPlugin(RxDBDevModePlugin)
+addRxPlugin(RxDBUpdatePlugin)
 addRxPlugin(RxDBLeaderElectionPlugin)
 addRxPlugin(RxDBQueryBuilderPlugin)
 
@@ -300,3 +303,20 @@ export const deleteBusiness = async (id: string) => {
     }
     await syncCollectionToFirestore(db.articles, "articles");
   };
+
+
+  export async function updateArticle(id: string, updates: Partial<Article>) {
+    const db = await intializeDatabase()
+    const doc = await db.articles.findOne(id).exec()
+
+    if (!doc) throw new Error("Article not found")
+
+    const current = doc.toMutableJSON()
+
+    await doc.update({
+      $set: {
+        ...current,
+        ...updates,
+      },
+    })
+  }
